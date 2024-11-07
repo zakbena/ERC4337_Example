@@ -1,0 +1,101 @@
+EntryPoint inherit of:
+IEntryPoint, StakeManager, NonceManager, ReentrancyGuard
+
+The EntryPoint contract (which also includes a couple of others, such as StakeManager) is a singleton.  
+There should only be one implementation because only one instance should exist on each chain.
+This contract verifies and executes the bundles of UserOperations sent to it.
+
+
+State Variable:
+
+UserOperations inherit from UserOperationLib
+
+senderCreator immutable, inherit from SenderCreator
+
+// internal value used during simulation: need to query aggregator.
+address constant SIMULATE_FIND_AGGREGATOR
+
+// marker for inner call revert on out of gas
+uint256 constant REVERT_REASON_MAX_LEN 
+bytes32 constant INNER_OUT_OF_GAS = hex'deadead'
+
+/**
+ * for simulation purposes, validateUserOp (and validatePaymasterUserOp) must return this value
+ * in case of signature failure, instead of revert.
+ */
+uint256  constant SIG_VALIDATION_FAILED = 1;
+////////
+FUNCTION:
+
+/**
+* compensate the caller's beneficiary address with the collected fees of all UserOperations.
+* @param beneficiary the address to receive the fees
+* @param amount amount to transfer.
+*/
+
+_compensate(), internal 
+
+Seems to pay the gas fees.
+Transfer funds to the benefcary (fees)
+////////
+FUNCTION:
+ _executeUserOp(uint256 opIndex, UserOperation calldata userOp, UserOpInfo memory opInfo) private
+
+    /**
+     * execute a user op
+     * @param opIndex index into the opInfo array
+     * @param userOp the userOp to execute
+     * @param opInfo the opInfo filled by validatePrepayment for this userOp.
+     * @return collected the total amount this userOp paid.
+     */
+
+_executeUserOp InternalFunction call:
+this.innerHandleOp  ===> fct pour executer l'operation user?
+
+Call Assembly if there is a revert code (to catch the out of gas)
+
+Collect the fees with _handlePostOp
+
+
+////////
+FUNCTION: 
+
+Public function to be called:
+HandleOps(UserOperation[] calldata ops, address payable beneficiary) public nonReentrant
+
+
+    /**
+     * Execute a batch of UserOperations.
+     * no signature aggregator is used.
+     * if any account requires an aggregator (that is, it returned an aggregator when
+     * performing simulateValidation), then handleAggregatedOps() must be used instead.
+     * @param ops the operations to execute
+     * @param beneficiary the address to receive the fees
+     */
+
+        uint256 opslen = ops.length;
+        UserOpInfo[] memory opInfos = new UserOpInfo[](opslen); // Attrib the UnserOpInfo to OpinFos from ops.length
+
+        For each data in OpInfos,  call _validatePrepayment, with (uint256 validationData, uint256 pmValidationData) = _validatePrepayment(i, ops[i], opInfo);
+        then _validateAccountAndPaymasterValidationData(i, validationData, pmValidationData, address(0));
+
+        // EMIT AN EVENT BeforeExectuion
+
+        for each ops and opInfos, call _exectureUerOp
+        and compensate (to the beneficiary)
+
+
+////////
+FUNCTION: 
+
+Public function to be called:
+   function handleAggregatedOps(UserOpsPerAggregator[] calldata opsPerAggregator,address payable beneficiary) public nonReentrant
+
+    /**
+     * Execute a batch of UserOperation with Aggregators
+     * @param opsPerAggregator the operations to execute, grouped by aggregator (or address(0) for no-aggregator accounts)
+     * @param beneficiary the address to receive the fees
+     */
+
+
+     Pass the signature to the Aggregator and the Aggregator emit the txs and new signature
